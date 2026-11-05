@@ -26,13 +26,14 @@ app_state = {
     "post_counter": 0,
     "category_counts": {c: 0 for c in CATEGORIES},
     "category_engagements": {c: 0 for c in CATEGORIES},
-    "feeling_counts": {f: 0 for f in FEELINGS}
+    "feeling_counts": {f: 0 for f in FEELINGS},
+    "active_filter": "ALL"
 }
 
 def sync_state_to_js():
     """ Sends python state metrics directly to Javascript for p5.js rendering """
     js_data = {
-        "categoryCounts": app_state["categoryCounts"] if "categoryCounts" in app_state else app_state["category_counts"],
+        "categoryCounts": app_state["category_counts"],
         "categoryEngagements": app_state["category_engagements"],
         "feelingCounts": app_state["feeling_counts"]
     }
@@ -50,8 +51,10 @@ def render_post_html(post_data, idx):
         for f in FEELINGS
     ])
     
+    display_style = "" if (app_state["active_filter"] == "ALL" or app_state["active_filter"] == cat) else 'style="display: none;"'
+
     return f"""
-    <div class="post-card bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-sm" data-category="{cat}">
+    <div class="post-card bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-sm" data-category="{cat}" {display_style}>
       <div class="flex items-center justify-between mb-3">
         <div class="flex items-center gap-2.5">
           <div class="w-9 h-9 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-lg">{post_data["avatar"]}</div>
@@ -92,6 +95,15 @@ def append_posts(count=3):
         document.getElementById("mindful-modal").classList.remove("hidden")
         app_state["posts_since_pause"] = 0
 
+def on_scroll(event):
+    """ Infinite scroll handler listening for near-bottom scroll events """
+    container = document.getElementById("feed-container")
+    # Check if scrolled near bottom (within 100px)
+    if container.scrollHeight - container.scrollTop <= container.clientHeight + 100:
+        # Prevent loading more if mindful modal is open
+        if document.getElementById("mindful-modal").classList.contains("hidden"):
+            append_posts(2)
+
 def interact(category):
     app_state["category_engagements"][category] += 1
     app_state["engagement_count"] += 1
@@ -112,12 +124,17 @@ def close_modal():
     document.getElementById("mindful-modal").classList.add("hidden")
 
 def filter_category(cat):
+    app_state["active_filter"] = cat
     cards = document.querySelectorAll(".post-card")
     for card in cards:
         if cat == "ALL" or card.getAttribute("data-category") == cat:
             card.style.display = "block"
         else:
             card.style.display = "none"
+
+# Attach infinite scroll listener to container
+scroll_proxy = create_proxy(on_scroll)
+document.getElementById("feed-container").addEventListener("scroll", scroll_proxy)
 
 # Initial load
 append_posts(4)
