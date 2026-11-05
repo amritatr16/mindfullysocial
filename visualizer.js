@@ -17,7 +17,7 @@ window.updateP5Data = function(jsonStr) {
   pyData = JSON.parse(jsonStr);
 };
 
-// Canvas 1: Category Radar Chart
+// Canvas 1: Category Radar Chart with Labels
 const sketch1 = (p) => {
   p.setup = () => {
     const container = document.getElementById('canvas-wrapper-1');
@@ -32,12 +32,13 @@ const sketch1 = (p) => {
   p.draw = () => {
     p.background(15, 23, 42);
     const cx = p.width / 2, cy = p.height / 2;
-    const radius = Math.min(p.width, p.height) * 0.35;
+    const radius = Math.min(p.width, p.height) * 0.32;
     const totalCats = CATEGORIES.length;
     const angleStep = p.TWO_PI / totalCats;
 
-    // Draw background polygon grids
+    // Draw background polygon grids & radial axis lines
     p.stroke(51, 65, 85, 120);
+    p.strokeWeight(1);
     p.noFill();
     for (let l = 1; l <= 3; l++) {
       const rL = (radius / 3) * l;
@@ -49,9 +50,31 @@ const sketch1 = (p) => {
       p.endShape(p.CLOSE);
     }
 
+    // Axis lines and Text Labels
+    p.textAlign(p.CENTER, p.CENTER);
+    p.textSize(10);
+    for (let i = 0; i < totalCats; i++) {
+      const angle = i * angleStep - p.HALF_PI;
+      const xVal = cx + p.cos(angle) * radius;
+      const yVal = cy + p.sin(angle) * radius;
+      
+      // Draw line from center to edge
+      p.stroke(51, 65, 85, 150);
+      p.line(cx, cy, xVal, yVal);
+
+      // Label positioning slightly past the radius edge
+      const labelDist = radius + 18;
+      const lx = cx + p.cos(angle) * labelDist;
+      const ly = cy + p.sin(angle) * labelDist;
+      
+      p.noStroke();
+      p.fill(148, 163, 184); // Slate-400 color
+      p.text(CATEGORIES[i], lx, ly);
+    }
+
     // Filled radar polygon based on Python data
     p.beginShape();
-    p.fill(6, 182, 212, 120);
+    p.fill(6, 182, 212, 130);
     p.stroke(34, 211, 238);
     p.strokeWeight(2);
 
@@ -63,13 +86,29 @@ const sketch1 = (p) => {
       const val = pyData.categoryCounts[cat] || 0;
       const norm = p.map(val, 0, Math.max(maxVal, 4), 0.15, 1.0);
       const angle = i * angleStep - p.HALF_PI;
-      p.vertex(cx + p.cos(angle) * (radius * norm), cy + p.sin(angle) * (radius * norm));
+      const px = cx + p.cos(angle) * (radius * norm);
+      const pyPos = cy + p.sin(angle) * (radius * norm);
+      p.vertex(px, pyPos);
     }
     p.endShape(p.CLOSE);
+
+    // Plot vertex points
+    for (let i = 0; i < totalCats; i++) {
+      const cat = CATEGORIES[i];
+      const val = pyData.categoryCounts[cat] || 0;
+      const norm = p.map(val, 0, Math.max(maxVal, 4), 0.15, 1.0);
+      const angle = i * angleStep - p.HALF_PI;
+      const px = cx + p.cos(angle) * (radius * norm);
+      const pyPos = cy + p.sin(angle) * (radius * norm);
+      
+      p.fill(34, 211, 238);
+      p.noStroke();
+      p.ellipse(px, pyPos, 6, 6);
+    }
   };
 };
 
-// Canvas 2: Wellbeing Particle Nodes
+// Canvas 2: Wellbeing Particle Nodes with Dynamic Connecting Lines
 const sketch2 = (p) => {
   let bubbles = [];
 
@@ -81,31 +120,65 @@ const sketch2 = (p) => {
         feeling: f,
         x: p.random(40, container.clientWidth - 40),
         y: p.random(40, container.clientHeight - 40),
-        vx: p.random(-0.4, 0.4),
-        vy: p.random(-0.4, 0.4)
+        vx: p.random(-0.5, 0.5),
+        vy: p.random(-0.5, 0.5)
       });
     });
+  };
+
+  p.windowResized = () => {
+    const container = document.getElementById('canvas-wrapper-2');
+    if (container) p.resizeCanvas(container.clientWidth, container.clientHeight);
   };
 
   p.draw = () => {
     p.background(15, 23, 42);
 
+    // Update positions & bounce off borders
+    bubbles.forEach(b => {
+      b.x += b.vx; 
+      b.y += b.vy;
+      if (b.x < 30 || b.x > p.width - 30) b.vx *= -1;
+      if (b.y < 30 || b.y > p.height - 30) b.vy *= -1;
+    });
+
+    // Draw connecting lines between close nodes
+    for (let i = 0; i < bubbles.length; i++) {
+      for (let j = i + 1; j < bubbles.length; j++) {
+        const d = p.dist(bubbles[i].x, bubbles[i].y, bubbles[j].x, bubbles[j].y);
+        const maxDist = 120;
+        if (d < maxDist) {
+          const alpha = p.map(d, 0, maxDist, 180, 0);
+          p.stroke(99, 102, 241, alpha); // Indigo stroke fade
+          p.strokeWeight(1.2);
+          p.line(bubbles[i].x, bubbles[i].y, bubbles[j].x, bubbles[j].y);
+        }
+      }
+    }
+
+    // Render nodes
     bubbles.forEach(b => {
       const count = pyData.feelingCounts[b.feeling] || 0;
-      const size = 20 + count * 8;
+      const size = 26 + count * 6;
 
-      b.x += b.vx; b.y += b.vy;
-      if (b.x < 20 || b.x > p.width - 20) b.vx *= -1;
-      if (b.y < 20 || b.y > p.height - 20) b.vy *= -1;
-
+      // Glow effect
       p.noStroke();
       p.fill(FEELING_COLORS[b.feeling] || '#ffffff');
       p.ellipse(b.x, b.y, size);
 
-      p.fill(255);
+      // Node label
+      p.fill(15, 23, 42); // Dark background contrast text
       p.textAlign(p.CENTER, p.CENTER);
       p.textSize(10);
-      p.text(b.feeling, b.x, b.y);
+      p.textStyle(p.BOLD);
+      p.text(b.feeling, b.x, b.y - 1);
+      
+      // Count badge
+      if (count > 0) {
+        p.textSize(8);
+        p.fill(255);
+        p.text(`(${count})`, b.x, b.y + 10);
+      }
     });
   };
 };
