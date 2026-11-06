@@ -47,13 +47,13 @@ def update_ui_headers():
 def render_post_html(post_data, idx):
     cat = post_data["cat"]
     feel_buttons = "".join([
-        f'<button class="text-[11px] px-2 py-0.5 rounded-lg bg-slate-950 border border-slate-800 text-slate-400 hover:text-indigo-300" py-click="log_feeling(\'{cat}\', \'{f}\')">{f}</button>'
+        f'<button id="feel-btn-{idx}-{f.replace("/", "-")}" class="feel-tag-btn text-[11px] px-2 py-0.5 rounded-lg bg-slate-950 border border-slate-800 text-slate-400 hover:text-indigo-300 transition-colors" py-click="log_feeling(\'{cat}\', \'{f}\', \'{idx}\')">{f}</button>'
         for f in FEELINGS
     ])
     
     display_style = "" if (app_state["active_filter"] == "ALL" or app_state["active_filter"] == cat) else 'style="display: none;"'
 
-    return f"""
+    return f''' 
     <div class="post-card bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-sm" data-category="{cat}" {display_style}>
       <div class="flex items-center justify-between mb-3">
         <div class="flex items-center gap-2.5">
@@ -67,7 +67,9 @@ def render_post_html(post_data, idx):
       </div>
       <p class="text-xs text-slate-300 mb-4">{post_data["text"]}</p>
       <div class="flex items-center gap-4 py-2 border-y border-slate-800/80 mb-3 text-slate-400 text-xs">
-        <button class="hover:text-rose-400 flex items-center gap-1.5" py-click="interact(\'{cat}\')"><i class="fa-regular fa-heart"></i> Like</button>
+        <button id="like-btn-{idx}" class="hover:text-rose-400 flex items-center gap-1.5 transition-colors" py-click="toggle_like(\'{cat}\', \'{idx}\')">
+          <i class="fa-regular fa-heart"></i> <span>Like</span>
+        </button>
         <button class="hover:text-cyan-400 flex items-center gap-1.5" py-click="interact(\'{cat}\')"><i class="fa-solid fa-share"></i> Share</button>
       </div>
       <div>
@@ -75,7 +77,7 @@ def render_post_html(post_data, idx):
         <div class="flex flex-wrap gap-1.5">{feel_buttons}</div>
       </div>
     </div>
-    """
+    '''
 
 def append_posts(count=3):
     container = document.getElementById("feed-container")
@@ -91,18 +93,34 @@ def append_posts(count=3):
     update_ui_headers()
     sync_state_to_js()
 
-    if app_state["posts_since_pause"] >= 4:
+    # Trigger mindful intervention after every 10 posts
+    if app_state["posts_since_pause"] >= 10:
         document.getElementById("mindful-modal").classList.remove("hidden")
         app_state["posts_since_pause"] = 0
 
 def on_scroll(event):
-    """ Infinite scroll handler listening for near-bottom scroll events """
-    container = document.getElementById("feed-container")
-    # Check if scrolled near bottom (within 100px)
-    if container.scrollHeight - container.scrollTop <= container.clientHeight + 100:
-        # Prevent loading more if mindful modal is open
-        if document.getElementById("mindful-modal").classList.contains("hidden"):
-            append_posts(2)
+def toggle_like(category, idx):
+    btn = document.getElementById(f"like-btn-{idx}")
+    if not btn:
+        return
+        
+    is_liked = btn.getAttribute("data-liked") == "true"
+    
+    if is_liked:
+        btn.setAttribute("data-liked", "false")
+        btn.className = "hover:text-rose-400 flex items-center gap-1.5 transition-colors text-slate-400"
+        btn.querySelector("i").className = "fa-regular fa-heart"
+        app_state["category_engagements"][category] = max(0, app_state["category_engagements"][category] - 1)
+        app_state["engagement_count"] = max(0, app_state["engagement_count"] - 1)
+    else:
+        btn.setAttribute("data-liked", "true")
+        btn.className = "text-rose-500 font-semibold flex items-center gap-1.5 transition-colors"
+        btn.querySelector("i").className = "fa-solid fa-heart text-rose-500"
+        app_state["category_engagements"][category] += 1
+        app_state["engagement_count"] += 1
+
+    update_ui_headers()
+    sync_state_to_js()
 
 def interact(category):
     app_state["category_engagements"][category] += 1
@@ -110,14 +128,34 @@ def interact(category):
     update_ui_headers()
     sync_state_to_js()
 
-def log_feeling(category, feeling):
-    app_state["feeling_counts"][feeling] += 1
-    app_state["feelings_count"] += 1
+def log_feeling(category, feeling, idx):
+    safe_feeling = feeling.replace("/", "-")
+    btn = document.getElementById(f"feel-btn-{idx}-{safe_feeling}")
+    if not btn:
+        return
+        
+    is_selected = btn.getAttribute("data-selected") == "true"
+    
+    if is_selected:
+        btn.setAttribute("data-selected", "false")
+        btn.className = "feel-tag-btn text-[11px] px-2 py-0.5 rounded-lg bg-slate-950 border border-slate-800 text-slate-400 hover:text-indigo-300 transition-colors"
+        app_state["feeling_counts"][feeling] = max(0, app_state["feeling_counts"][feeling] - 1)
+        app_state["feelings_count"] = max(0, app_state["feelings_count"] - 1)
+    else:
+        btn.setAttribute("data-selected", "true")
+        btn.className = "feel-tag-btn text-[11px] px-2 py-0.5 rounded-lg bg-indigo-600 text-white border border-indigo-400 font-medium transition-colors shadow-sm"
+        app_state["feeling_counts"][feeling] += 1
+        app_state["feelings_count"] += 1
+
     update_ui_headers()
     sync_state_to_js()
 
+def toggle_engagement_radar(event):
+    is_checked = document.getElementById("engagement-radar-toggle").checked
+    window.showEngagementRadar = is_checked
+
 def log_modal_feeling(feeling):
-    log_feeling("Lifestyle", feeling)
+    log_feeling("Lifestyle", feeling, "modal")
     close_modal()
 
 def close_modal():
