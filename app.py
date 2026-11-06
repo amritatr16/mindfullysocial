@@ -53,7 +53,7 @@ def render_post_html(post_data, idx):
     
     display_style = "" if (app_state["active_filter"] == "ALL" or app_state["active_filter"] == cat) else 'style="display: none;"'
 
-    return f'''
+    return f"""
     <div class="post-card bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-sm" data-category="{cat}" {display_style}>
       <div class="flex items-center justify-between mb-3">
         <div class="flex items-center gap-2.5">
@@ -75,7 +75,7 @@ def render_post_html(post_data, idx):
         <div class="flex flex-wrap gap-1.5">{feel_buttons}</div>
       </div>
     </div>
-    '''
+    """
 
 def append_posts(count=3):
     container = document.getElementById("feed-container")
