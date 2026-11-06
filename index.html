@@ -70,15 +70,15 @@
       <div class="p-3 bg-slate-900/60 border-b border-slate-800/60 flex items-center gap-2 overflow-x-auto text-xs shrink-0">
         <span class="text-slate-400 shrink-0 font-medium"><i class="fa-solid fa-filter text-cyan-400 mr-1"></i> Filter:</span>
         <div id="category-filter-chips" class="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-          <button class="chip active bg-cyan-600/30 text-cyan-300 border border-cyan-500/50 px-2.5 py-0.5 rounded-full text-[11px]" py-click="filter_category('ALL')">All</button>
-          <button class="chip bg-slate-800 text-slate-400 border border-slate-700 px-2.5 py-0.5 rounded-full text-[11px]" py-click="filter_category('Politics')">Politics</button>
-          <button class="chip bg-slate-800 text-slate-400 border border-slate-700 px-2.5 py-0.5 rounded-full text-[11px]" py-click="filter_category('News')">News</button>
-          <button class="chip bg-slate-800 text-slate-400 border border-slate-700 px-2.5 py-0.5 rounded-full text-[11px]" py-click="filter_category('Memes/Comedy')">Memes</button>
-          <button class="chip bg-slate-800 text-slate-400 border border-slate-700 px-2.5 py-0.5 rounded-full text-[11px]" py-click="filter_category('Lifestyle')">Lifestyle</button>
-          <button class="chip bg-slate-800 text-slate-400 border border-slate-700 px-2.5 py-0.5 rounded-full text-[11px]" py-click="filter_category('Food')">Food</button>
-          <button class="chip bg-slate-800 text-slate-400 border border-slate-700 px-2.5 py-0.5 rounded-full text-[11px]" py-click="filter_category('Sports')">Sports</button>
-          <button class="chip bg-slate-800 text-slate-400 border border-slate-700 px-2.5 py-0.5 rounded-full text-[11px]" py-click="filter_category('Art')">Art</button>
-          <button class="chip bg-slate-800 text-slate-400 border border-slate-700 px-2.5 py-0.5 rounded-full text-[11px]" py-click="filter_category('Advertisements')">Ads</button>
+          <button class="chip active bg-cyan-600/30 text-cyan-300 border border-cyan-500/50 px-2.5 py-0.5 rounded-full text-[11px]" data-action="filter" data-value="ALL">All</button>
+          <button class="chip bg-slate-800 text-slate-400 border border-slate-700 px-2.5 py-0.5 rounded-full text-[11px]" data-action="filter" data-value="Politics">Politics</button>
+          <button class="chip bg-slate-800 text-slate-400 border border-slate-700 px-2.5 py-0.5 rounded-full text-[11px]" data-action="filter" data-value="News">News</button>
+          <button class="chip bg-slate-800 text-slate-400 border border-slate-700 px-2.5 py-0.5 rounded-full text-[11px]" data-action="filter" data-value="Memes/Comedy">Memes</button>
+          <button class="chip bg-slate-800 text-slate-400 border border-slate-700 px-2.5 py-0.5 rounded-full text-[11px]" data-action="filter" data-value="Lifestyle">Lifestyle</button>
+          <button class="chip bg-slate-800 text-slate-400 border border-slate-700 px-2.5 py-0.5 rounded-full text-[11px]" data-action="filter" data-value="Food">Food</button>
+          <button class="chip bg-slate-800 text-slate-400 border border-slate-700 px-2.5 py-0.5 rounded-full text-[11px]" data-action="filter" data-value="Sports">Sports</button>
+          <button class="chip bg-slate-800 text-slate-400 border border-slate-700 px-2.5 py-0.5 rounded-full text-[11px]" data-action="filter" data-value="Art">Art</button>
+          <button class="chip bg-slate-800 text-slate-400 border border-slate-700 px-2.5 py-0.5 rounded-full text-[11px]" data-action="filter" data-value="Advertisements">Ads</button>
         </div>
       </div>
 
@@ -96,15 +96,16 @@
         </p>
 
         <div class="grid grid-cols-2 gap-2.5 w-full max-w-xs mb-6">
-          <button class="bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-slate-200" py-click="log_modal_feeling('Inspired')">✨ Inspired</button>
-          <button class="bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-slate-200" py-click="log_modal_feeling('Anxious')">😰 Anxious</button>
-          <button class="bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-slate-200" py-click="log_modal_feeling('Energized')">⚡ Energized</button>
-          <button class="bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-slate-200" py-click="log_modal_feeling('Drained')">🔋 Drained</button>
-          <button class="bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-slate-200" py-click="log_modal_feeling('Calm')">🌿 Calm</button>
-          <button class="bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-slate-200" py-click="log_modal_feeling('Distracted')">🌀 Distracted</button>
+          <button class="bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-slate-200" data-action="modal-feeling" data-value="Inspired">✨ Inspired</button>
+          <button class="bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-slate-200" data-action="modal-feeling" data-value="Anxious">😰 Anxious</button>
+          <button class="bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-slate-200" data-action="modal-feeling" data-value="Energized">⚡ Energized</button>
+          <button class="bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-slate-200" data-action="modal-feeling" data-value="Drained">🔋 Drained</button>
+          <button class="bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-slate-200" data-action="modal-feeling" data-value="Calm">🌿 Calm</button>
+          <button class="bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-slate-200" data-action="modal-feeling" data-value="Distracted">🌀 Distracted</button>
+          <button class="bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-slate-200" data-action="modal-feeling" data-value="Connected">💞 Connected</button>
         </div>
 
-        <button class="text-xs text-slate-500 hover:text-slate-300 underline" py-click="close_modal()">
+        <button class="text-xs text-slate-500 hover:text-slate-300 underline" data-action="close-modal">
           Skip check-in & continue
         </button>
       </div>
