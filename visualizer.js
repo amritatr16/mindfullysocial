@@ -7,6 +7,8 @@ let pyData = {
 const CATEGORIES = ['Politics', 'News', 'Memes/Comedy', 'Lifestyle', 'Food', 'Sports', 'Art', 'Advertisements'];
 const FEELINGS = ['Inspired', 'Anxious', 'Energized', 'Drained', 'Calm', 'Distracted', 'Connected'];
 
+window.showEngagementRadar = false;
+
 const FEELING_COLORS = {
   'Inspired': '#34d399', 'Anxious': '#f87171', 'Energized': '#fbbf24',
   'Drained': '#94a3b8', 'Calm': '#38bdf8', 'Distracted': '#c084fc', 'Connected': '#f472b6'
@@ -36,45 +38,9 @@ const sketch1 = (p) => {
     const totalCats = CATEGORIES.length;
     const angleStep = p.TWO_PI / totalCats;
 
-    // Draw background polygon grids & radial axis lines
-    p.stroke(51, 65, 85, 120);
-    p.strokeWeight(1);
-    p.noFill();
-    for (let l = 1; l <= 3; l++) {
-      const rL = (radius / 3) * l;
-      p.beginShape();
-      for (let i = 0; i < totalCats; i++) {
-        const angle = i * angleStep - p.HALF_PI;
-        p.vertex(cx + p.cos(angle) * rL, cy + p.sin(angle) * rL);
-      }
-      p.endShape(p.CLOSE);
-    }
-
-    // Axis lines and Text Labels
-    p.textAlign(p.CENTER, p.CENTER);
-    p.textSize(10);
-    for (let i = 0; i < totalCats; i++) {
-      const angle = i * angleStep - p.HALF_PI;
-      const xVal = cx + p.cos(angle) * radius;
-      const yVal = cy + p.sin(angle) * radius;
-      
-      // Draw line from center to edge
-      p.stroke(51, 65, 85, 150);
-      p.line(cx, cy, xVal, yVal);
-
-      // Label positioning slightly past the radius edge
-      const labelDist = radius + 18;
-      const lx = cx + p.cos(angle) * labelDist;
-      const ly = cy + p.sin(angle) * labelDist;
-      
-      p.noStroke();
-      p.fill(148, 163, 184); // Slate-400 color
-      p.text(CATEGORIES[i], lx, ly);
-    }
-
-    // Filled radar polygon based on Python data
+    // Filled radar polygon based on Python data (Category Counts - Cyan)
     p.beginShape();
-    p.fill(6, 182, 212, 130);
+    p.fill(6, 182, 212, 110);
     p.stroke(34, 211, 238);
     p.strokeWeight(2);
 
@@ -92,7 +58,7 @@ const sketch1 = (p) => {
     }
     p.endShape(p.CLOSE);
 
-    // Plot vertex points
+    // Plot vertex points for Category Counts
     for (let i = 0; i < totalCats; i++) {
       const cat = CATEGORIES[i];
       const val = pyData.categoryCounts[cat] || 0;
@@ -104,6 +70,42 @@ const sketch1 = (p) => {
       p.fill(34, 211, 238);
       p.noStroke();
       p.ellipse(px, pyPos, 6, 6);
+    }
+
+    // OVERLAPPING ENGAGEMENT RADAR (Amber/Orange) - Rendered if toggle is checked
+    if (window.showEngagementRadar) {
+      let maxEng = 1;
+      CATEGORIES.forEach(c => { if ((pyData.categoryEngagements[c] || 0) > maxEng) maxEng = pyData.categoryEngagements[c]; });
+
+      p.beginShape();
+      p.fill(245, 158, 11, 120); // Amber-500 fill with transparency
+      p.stroke(251, 191, 36);    # Amber-400 stroke
+      p.strokeWeight(2);
+
+      for (let i = 0; i < totalCats; i++) {
+        const cat = CATEGORIES[i];
+        const val = pyData.categoryEngagements[cat] || 0;
+        const norm = p.map(val, 0, Math.max(maxEng, 4), 0.15, 1.0);
+        const angle = i * angleStep - p.HALF_PI;
+        const px = cx + p.cos(angle) * (radius * norm);
+        const pyPos = cy + p.sin(angle) * (radius * norm);
+        p.vertex(px, pyPos);
+      }
+      p.endShape(p.CLOSE);
+
+      // Engagement Vertex Points
+      for (let i = 0; i < totalCats; i++) {
+        const cat = CATEGORIES[i];
+        const val = pyData.categoryEngagements[cat] || 0;
+        const norm = p.map(val, 0, Math.max(maxEng, 4), 0.15, 1.0);
+        const angle = i * angleStep - p.HALF_PI;
+        const px = cx + p.cos(angle) * (radius * norm);
+        const pyPos = cy + p.sin(angle) * (radius * norm);
+        
+        p.fill(251, 191, 36);
+        p.noStroke();
+        p.ellipse(px, pyPos, 6, 6);
+      }
     }
   };
 };
