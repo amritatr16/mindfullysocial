@@ -92,7 +92,7 @@
         </div>
         <h3 class="text-lg font-bold text-slate-100 mb-1">Mindful Pause Intervention</h3>
         <p class="text-xs text-slate-400 mb-5 max-w-sm">
-          You have consumed 4 posts. Take a second to assess your current mental state before continuing.
+          You have consumed 10 posts. Take a second to assess your current mental state before continuing.
         </p>
 
         <div class="grid grid-cols-2 gap-2.5 w-full max-w-xs mb-6">
@@ -115,9 +115,17 @@
     <section class="w-full md:w-1/2 flex flex-col bg-slate-900 h-full p-4 overflow-y-auto space-y-4">
       
       <div class="bg-slate-950 rounded-xl border border-slate-800 p-3">
-        <h2 class="text-xs font-bold text-cyan-400 mb-2 flex items-center gap-2">
-          <i class="fa-solid fa-chart-pie"></i> Category Distribution Radar
-        </h2>
+        <div class="flex items-center justify-between mb-2">
+          <h2 class="text-xs font-bold text-cyan-400 flex items-center gap-2">
+            <i class="fa-solid fa-chart-pie"></i> Category & Engagement Radar
+          </h2>
+          <!-- Toggle control for overlapping Engagement Radar -->
+          <label class="flex items-center gap-2 cursor-pointer text-[11px] text-slate-400 hover:text-slate-200 select-none">
+            <span>Engagement Overlay</span>
+            <input type="checkbox" id="engagement-radar-toggle" class="sr-only peer" py-change="toggle_engagement_radar(e)">
+            <div class="w-7 h-4 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-amber-500 relative"></div>
+          </label>
+        </div>
         <div id="canvas-wrapper-1" class="w-full h-56 rounded-lg overflow-hidden relative"></div>
       </div>
 
