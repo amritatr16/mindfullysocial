@@ -3,14 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MindfulFeed & Wellbeing Radar</title>
-  
+  <title>MindfulFeed &amp; Wellbeing Radar</title>
+
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-  
-  <!-- FontAwesome Icons -->
+
+  <!-- Font + icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  
+
   <!-- p5.js Library -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/p5.min.js"></script>
 
@@ -22,116 +25,363 @@
   <script src="visualizer.js"></script>
 
   <style>
+    :root {
+      --bg: #060a13;
+      --panel: #0c1322;
+      --panel-2: #111a2e;
+      --line: rgba(148, 163, 184, .14);
+      --line-strong: rgba(148, 163, 184, .28);
+      --text: #e5ecf6;
+      --muted: #8fa0ba;
+      --faint: #5d6b83;
+      --seen: #22d3ee;
+      --engage: #fbbf24;
+      --accent: #818cf8;
+    }
+
+    html, body { height: 100%; }
+    body {
+      font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+      background-color: var(--bg);
+      background-image:
+        radial-gradient(900px 480px at 12% -10%, rgba(99, 102, 241, .13), transparent 60%),
+        radial-gradient(700px 420px at 100% 0%, rgba(34, 211, 238, .07), transparent 60%);
+      color: var(--text);
+    }
+
     ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: #0f172a; }
-    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 9999px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #26334b; border-radius: 9999px; }
     .scrollbar-none::-webkit-scrollbar { display: none; }
     .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
+
+    :focus-visible { outline: 2px solid var(--seen); outline-offset: 2px; }
+
+    /* ---------- Header ---------- */
+    .app-header {
+      background: rgba(10, 16, 30, .85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--line);
+    }
+    .logo {
+      width: 34px; height: 34px; border-radius: 10px;
+      display: grid; place-items: center; color: #fff; font-size: 14px;
+      background: linear-gradient(135deg, #6366f1, #22d3ee);
+      box-shadow: 0 6px 18px rgba(99, 102, 241, .35);
+    }
+    .stat {
+      display: flex; align-items: center; gap: .4rem;
+      padding: .35rem .7rem; border-radius: 999px;
+      background: rgba(255, 255, 255, .04); border: 1px solid var(--line);
+      font-size: 12px; color: var(--muted); white-space: nowrap;
+    }
+    .stat b { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+    .btn-ghost {
+      display: inline-flex; align-items: center; gap: .45rem;
+      padding: .4rem .8rem; border-radius: 10px; font-size: 12px; font-weight: 500;
+      color: var(--muted); background: transparent; border: 1px solid var(--line-strong);
+      cursor: pointer; transition: color .15s, border-color .15s, background .15s;
+    }
+    .btn-ghost:hover { color: var(--text); border-color: rgba(251, 113, 133, .6); background: rgba(251, 113, 133, .08); }
+
+    /* ---------- Mobile tabs ---------- */
+    .tabbar { display: none; border-bottom: 1px solid var(--line); background: rgba(10, 16, 30, .7); }
+    .tab {
+      flex: 1; padding: .6rem; font-size: 13px; font-weight: 500; color: var(--muted);
+      border-bottom: 2px solid transparent; background: none; cursor: pointer;
+    }
+    .tab.active { color: var(--text); border-bottom-color: var(--seen); }
+    @media (max-width: 767px) {
+      .tabbar { display: flex; }
+      .pane-hidden { display: none !important; }
+      .hide-sm { display: none; }
+    }
+
+    /* ---------- Feed ---------- */
+    .filter-bar { border-bottom: 1px solid var(--line); background: rgba(10, 16, 30, .6); }
+    .chip {
+      padding: .25rem .7rem; border-radius: 999px; font-size: 11.5px; font-weight: 500;
+      color: var(--muted); background: rgba(255, 255, 255, .03); border: 1px solid var(--line);
+      cursor: pointer; white-space: nowrap; transition: all .15s;
+    }
+    .chip:hover { color: var(--text); border-color: var(--line-strong); }
+    .chip.active { color: #a5f3fc; background: rgba(34, 211, 238, .14); border-color: rgba(34, 211, 238, .5); }
+
+    .pause-strip { padding: .55rem 1rem; border-bottom: 1px solid var(--line); }
+    .pause-track { height: 4px; border-radius: 999px; background: rgba(255, 255, 255, .06); overflow: hidden; }
+    .pause-fill {
+      height: 100%; width: 0; border-radius: 999px;
+      background: linear-gradient(90deg, #22d3ee, #818cf8);
+      transition: width .35s ease;
+    }
+
+    #feed-container {
+      display: flex; flex-direction: column; align-items: center; gap: 14px;
+      padding: 16px; overflow-y: auto; flex: 1; min-height: 0;
+    }
+    .post-card {
+      flex: none; width: 100%; max-width: 560px;
+      background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 16px;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .post-card.engaged { border-color: rgba(251, 191, 36, .4); box-shadow: 0 0 0 1px rgba(251, 191, 36, .08), 0 8px 24px rgba(251, 191, 36, .05); }
+    .post-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .post-who { display: flex; align-items: center; gap: 10px; }
+    .post-who h4 { font-size: 13px; font-weight: 600; color: var(--text); line-height: 1.2; }
+    .post-who span { font-size: 11px; color: var(--faint); }
+    .avatar {
+      width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center;
+      font-size: 18px; border: 1px solid;
+    }
+    .tag { font-size: 11px; font-weight: 500; padding: .2rem .65rem; border-radius: 999px; border: 1px solid; }
+    .post-text { font-size: 14px; line-height: 1.55; color: #cbd5e1; margin-bottom: 14px; max-width: 62ch; }
+    .post-actions { display: flex; gap: 6px; padding: 8px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); margin-bottom: 12px; }
+    .act-btn {
+      display: inline-flex; align-items: center; gap: .4rem; font-size: 12px; color: var(--muted);
+      padding: .3rem .65rem; border-radius: 8px; background: none; border: none; cursor: pointer;
+      transition: color .15s, background .15s;
+    }
+    .act-btn:hover { background: rgba(255, 255, 255, .05); color: var(--text); }
+    .act-btn.like.active { color: #fb7185; }
+    .act-btn.share.active { color: var(--seen); }
+    .feel-block p { font-size: 11.5px; color: var(--muted); margin-bottom: 8px; }
+    .feel-row { display: flex; flex-wrap: wrap; gap: 6px; }
+    .feel-btn {
+      font-size: 11.5px; padding: .25rem .6rem; border-radius: 999px; cursor: pointer;
+      color: var(--muted); background: rgba(255, 255, 255, .02); border: 1px solid var(--line);
+      transition: all .15s;
+    }
+    .feel-btn:hover { color: var(--c); border-color: var(--c); }
+    .feel-btn.selected { color: var(--c); border-color: var(--c); background: rgba(255, 255, 255, .07); font-weight: 600; }
+
+    /* ---------- Mindful pause modal ---------- */
+    .modal {
+      display: none; position: absolute; inset: 0; z-index: 50;
+      align-items: center; justify-content: center; padding: 24px; text-align: center;
+      background: rgba(5, 8, 16, .93); backdrop-filter: blur(14px);
+    }
+    .modal.open { display: flex; animation: modalIn .3s ease-out; }
+    @keyframes modalIn { from { opacity: 0; transform: scale(.98); } to { opacity: 1; transform: none; } }
+    .modal-card { width: 100%; max-width: 380px; display: flex; flex-direction: column; align-items: center; }
+    .breath {
+      width: 78px; height: 78px; border-radius: 50%; display: grid; place-items: center;
+      color: #67e8f9; font-size: 22px; margin-bottom: 18px;
+      background: radial-gradient(circle, rgba(34, 211, 238, .28), rgba(99, 102, 241, .08) 70%);
+      border: 1px solid rgba(34, 211, 238, .4);
+      animation: breathe 6s ease-in-out infinite;
+    }
+    @keyframes breathe { 0%, 100% { transform: scale(.85); opacity: .75; } 50% { transform: scale(1.1); opacity: 1; } }
+    .modal-kicker { font-size: 12px; color: var(--seen); font-weight: 500; margin-bottom: 4px; }
+    .modal-card h3 { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+    .modal-card .modal-text { font-size: 13px; color: var(--muted); line-height: 1.55; margin-bottom: 8px; }
+    .modal-round { font-size: 12px; color: var(--faint); margin-bottom: 20px; min-height: 16px; }
+    .modal-feelings { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-bottom: 20px; }
+    .modal-feel {
+      padding: .55rem .9rem; border-radius: 12px; font-size: 13px; color: var(--text); cursor: pointer;
+      background: var(--panel-2); border: 1px solid var(--line-strong); transition: all .15s;
+    }
+    .modal-feel:hover { border-color: var(--c); color: var(--c); transform: translateY(-1px); }
+    .skip { font-size: 12px; color: var(--faint); text-decoration: underline; background: none; border: none; cursor: pointer; }
+    .skip:hover { color: var(--text); }
+
+    /* ---------- Insights pane ---------- */
+    .insights { padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; background: rgba(8, 13, 25, .55); }
+    .mini {
+      flex: 1; min-width: 0; padding: .7rem .85rem; border-radius: 14px;
+      background: var(--panel); border: 1px solid var(--line);
+    }
+    .mini span { display: block; font-size: 11px; color: var(--muted); margin-bottom: 2px; }
+    .mini b { font-size: 14px; font-weight: 600; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .viz-card { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 14px 14px 12px; }
+    .viz-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+    .viz-head h2 { font-size: 13.5px; font-weight: 600; display: flex; align-items: center; gap: .5rem; }
+    .viz-head p { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+    .viz-note { font-size: 11px; color: var(--faint); margin-top: 6px; line-height: 1.5; }
+    .canvas-wrap { width: 100%; position: relative; border-radius: 12px; overflow: hidden; background: rgba(4, 8, 17, .6); border: 1px solid rgba(148, 163, 184, .08); }
+
+    .legend { display: flex; align-items: center; gap: 14px; font-size: 11.5px; color: var(--muted); margin-bottom: 8px; }
+    .legend i { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; }
+    .legend .off { opacity: .35; text-decoration: line-through; }
+
+    /* Switch */
+    .switch {
+      display: inline-flex; align-items: center; gap: .5rem; flex-shrink: 0;
+      font-size: 11.5px; color: var(--muted); background: none; border: none; cursor: pointer; padding: 2px;
+    }
+    .switch .track {
+      width: 34px; height: 20px; border-radius: 999px; position: relative;
+      background: rgba(255, 255, 255, .1); border: 1px solid var(--line-strong); transition: all .2s;
+    }
+    .switch .track::after {
+      content: ''; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%;
+      background: #cbd5e1; transition: transform .2s, background .2s;
+    }
+    .switch.on .track { background: rgba(251, 191, 36, .25); border-color: rgba(251, 191, 36, .7); }
+    .switch.on .track::after { transform: translateX(14px); background: var(--engage); }
+    .switch.on { color: var(--text); }
+
+    /* Toast */
+    .toast {
+      position: fixed; left: 50%; bottom: 22px; transform: translate(-50%, 20px); opacity: 0; pointer-events: none;
+      z-index: 100; display: flex; align-items: center; gap: .55rem;
+      padding: .6rem 1rem; border-radius: 12px; font-size: 12.5px;
+      background: #0f1a30; border: 1px solid var(--line-strong); box-shadow: 0 10px 30px rgba(0, 0, 0, .45);
+      transition: opacity .25s, transform .25s;
+    }
+    .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+    @media (prefers-reduced-motion: reduce) {
+      .breath { animation: none; }
+      .modal.open { animation: none; }
+      * { transition-duration: .01ms !important; }
+    }
   </style>
 </head>
-<body class="bg-slate-950 text-slate-100 font-sans h-full flex flex-col overflow-hidden">
+<body class="h-full flex flex-col overflow-hidden">
 
   <!-- APP HEADER -->
-  <header class="h-14 bg-slate-900 border-b border-slate-800 px-4 flex items-center justify-between shrink-0">
-    <div class="flex items-center gap-3">
-      <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-bold text-sm shadow-md">
-        <i class="fa-solid fa-brain"></i>
-      </div>
-      <div>
-        <h1 class="font-bold text-sm tracking-wide text-slate-100">MindfulFeed & Wellbeing Radar</h1>
-        <p class="text-[10px] text-slate-400">PyScript + p5.js GitHub Deployable Prototype</p>
+  <header class="app-header h-14 px-4 flex items-center justify-between shrink-0 gap-3">
+    <div class="flex items-center gap-3 min-w-0">
+      <div class="logo"><i class="fa-solid fa-brain"></i></div>
+      <div class="min-w-0">
+        <h1 class="font-semibold text-sm text-slate-100 truncate">MindfulFeed &amp; Wellbeing Radar</h1>
+        <p class="text-[11px] text-slate-400 hide-sm">A feed that pauses, asks and shows you the pattern</p>
       </div>
     </div>
 
-    <!-- Live Counters -->
-    <div class="flex items-center gap-3 text-xs">
-      <div class="flex items-center gap-1.5 bg-slate-800/80 px-3 py-1.5 rounded-full border border-slate-700/50">
-        <span class="text-slate-400">Consumed:</span>
-        <span id="stat-seen-count" class="font-semibold text-cyan-400">0</span>
-      </div>
-      <div class="flex items-center gap-1.5 bg-slate-800/80 px-3 py-1.5 rounded-full border border-slate-700/50">
-        <span class="text-slate-400">Engaged:</span>
-        <span id="stat-engagement-count" class="font-semibold text-amber-400">0</span>
-      </div>
-      <div class="flex items-center gap-1.5 bg-slate-800/80 px-3 py-1.5 rounded-full border border-slate-700/50">
-        <span class="text-slate-400">Feelings:</span>
-        <span id="stat-feelings-count" class="font-semibold text-indigo-400">0</span>
-      </div>
+    <div class="flex items-center gap-2">
+      <div class="stat" title="Posts you've scrolled past"><i class="fa-solid fa-eye" style="color:var(--seen)"></i><span class="hide-sm">Consumed</span><b id="stat-seen-count">0</b></div>
+      <div class="stat" title="Likes and shares"><i class="fa-solid fa-hand-pointer" style="color:var(--engage)"></i><span class="hide-sm">Engaged</span><b id="stat-engagement-count">0</b></div>
+      <div class="stat" title="Feelings you've tagged"><i class="fa-solid fa-face-smile" style="color:var(--accent)"></i><span class="hide-sm">Feelings</span><b id="stat-feelings-count">0</b></div>
+      <button class="btn-ghost" id="reset-btn" data-action="reset" title="Clear this session and start over">
+        <i class="fa-solid fa-rotate-left"></i><span class="hide-sm">Reset session</span>
+      </button>
     </div>
   </header>
 
+  <!-- MOBILE TABS -->
+  <nav class="tabbar shrink-0" role="tablist">
+    <button class="tab active" id="tab-feed" role="tab" aria-selected="true">Feed</button>
+    <button class="tab" id="tab-insights" role="tab" aria-selected="false">Insights</button>
+  </nav>
+
   <!-- MAIN DUAL PANE CONTAINER -->
-  <main class="flex-1 flex flex-col md:flex-row overflow-hidden relative">
+  <main class="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0">
 
     <!-- LEFT PANE: SOCIAL MEDIA FEED -->
-    <section class="w-full md:w-1/2 flex flex-col border-r border-slate-800/80 bg-slate-950 h-full relative">
-      
+    <section id="pane-feed" class="flex-1 min-w-0 min-h-0 flex flex-col relative md:border-r border-slate-800/80">
+
       <!-- Category Filter Bar -->
-      <div class="p-3 bg-slate-900/60 border-b border-slate-800/60 flex items-center gap-2 overflow-x-auto text-xs shrink-0">
-        <span class="text-slate-400 shrink-0 font-medium"><i class="fa-solid fa-filter text-cyan-400 mr-1"></i> Filter:</span>
-        <div id="category-filter-chips" class="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-          <button class="chip active bg-cyan-600/30 text-cyan-300 border border-cyan-500/50 px-2.5 py-0.5 rounded-full text-[11px]" data-action="filter" data-value="ALL">All</button>
-          <button class="chip bg-slate-800 text-slate-400 border border-slate-700 px-2.5 py-0.5 rounded-full text-[11px]" data-action="filter" data-value="Politics">Politics</button>
-          <button class="chip bg-slate-800 text-slate-400 border border-slate-700 px-2.5 py-0.5 rounded-full text-[11px]" data-action="filter" data-value="News">News</button>
-          <button class="chip bg-slate-800 text-slate-400 border border-slate-700 px-2.5 py-0.5 rounded-full text-[11px]" data-action="filter" data-value="Memes/Comedy">Memes</button>
-          <button class="chip bg-slate-800 text-slate-400 border border-slate-700 px-2.5 py-0.5 rounded-full text-[11px]" data-action="filter" data-value="Lifestyle">Lifestyle</button>
-          <button class="chip bg-slate-800 text-slate-400 border border-slate-700 px-2.5 py-0.5 rounded-full text-[11px]" data-action="filter" data-value="Food">Food</button>
-          <button class="chip bg-slate-800 text-slate-400 border border-slate-700 px-2.5 py-0.5 rounded-full text-[11px]" data-action="filter" data-value="Sports">Sports</button>
-          <button class="chip bg-slate-800 text-slate-400 border border-slate-700 px-2.5 py-0.5 rounded-full text-[11px]" data-action="filter" data-value="Art">Art</button>
-          <button class="chip bg-slate-800 text-slate-400 border border-slate-700 px-2.5 py-0.5 rounded-full text-[11px]" data-action="filter" data-value="Advertisements">Ads</button>
+      <div class="filter-bar px-3 py-2.5 flex items-center gap-2 shrink-0">
+        <span class="text-[11.5px] text-slate-400 shrink-0"><i class="fa-solid fa-filter text-cyan-400 mr-1"></i>Filter</span>
+        <div id="category-filter-chips" class="flex gap-1.5 overflow-x-auto scrollbar-none">
+          <button class="chip active" data-action="filter" data-value="ALL">All</button>
+          <button class="chip" data-action="filter" data-value="Politics">Politics</button>
+          <button class="chip" data-action="filter" data-value="News">News</button>
+          <button class="chip" data-action="filter" data-value="Memes/Comedy">Memes</button>
+          <button class="chip" data-action="filter" data-value="Lifestyle">Lifestyle</button>
+          <button class="chip" data-action="filter" data-value="Food">Food</button>
+          <button class="chip" data-action="filter" data-value="Sports">Sports</button>
+          <button class="chip" data-action="filter" data-value="Art">Art</button>
+          <button class="chip" data-action="filter" data-value="Advertisements">Ads</button>
         </div>
+      </div>
+
+      <!-- Progress to the next mindful pause -->
+      <div class="pause-strip shrink-0">
+        <div class="flex items-center justify-between text-[11.5px] text-slate-400 mb-1.5">
+          <span id="pause-label">Next pause in 10 posts</span>
+          <span id="pause-count" class="tabular-nums">0 / 10</span>
+        </div>
+        <div class="pause-track"><div class="pause-fill" id="pause-bar"></div></div>
       </div>
 
       <!-- Feed Container -->
-      <div id="feed-container" class="flex-1 overflow-y-auto p-4 space-y-5 relative"></div>
+      <div id="feed-container"></div>
 
       <!-- MINDFUL FRICTION MODAL -->
-      <div id="mindful-modal" class="hidden absolute inset-0 bg-slate-950/95 backdrop-blur-lg z-50 flex flex-col items-center justify-center p-6 text-center">
-        <div class="w-14 h-14 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 text-xl mb-4">
-          <i class="fa-solid fa-spa"></i>
-        </div>
-        <h3 class="text-lg font-bold text-slate-100 mb-1">Mindful Pause Intervention</h3>
-        <p class="text-xs text-slate-400 mb-5 max-w-sm">
-          You have consumed 4 posts. Take a second to assess your current mental state before continuing.
-        </p>
+      <div id="mindful-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+        <div class="modal-card">
+          <div class="breath"><i class="fa-solid fa-spa"></i></div>
+          <span class="modal-kicker" id="modal-kicker">Pause 1</span>
+          <h3 id="modal-title">Take a mindful pause</h3>
+          <p class="modal-text" id="modal-text">You’ve scrolled through 10 more posts. Take a breath and notice how you feel before continuing.</p>
+          <p class="modal-round" id="modal-round"></p>
 
-        <div class="grid grid-cols-2 gap-2.5 w-full max-w-xs mb-6">
-          <button class="bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-slate-200" data-action="modal-feeling" data-value="Inspired">✨ Inspired</button>
-          <button class="bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-slate-200" data-action="modal-feeling" data-value="Anxious">😰 Anxious</button>
-          <button class="bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-slate-200" data-action="modal-feeling" data-value="Energized">⚡ Energized</button>
-          <button class="bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-slate-200" data-action="modal-feeling" data-value="Drained">🔋 Drained</button>
-          <button class="bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-slate-200" data-action="modal-feeling" data-value="Calm">🌿 Calm</button>
-          <button class="bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-slate-200" data-action="modal-feeling" data-value="Distracted">🌀 Distracted</button>
-          <button class="bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-slate-200" data-action="modal-feeling" data-value="Connected">💞 Connected</button>
-        </div>
+          <div class="modal-feelings">
+            <button class="modal-feel" style="--c:#34d399" data-action="modal-feeling" data-value="Inspired">✨ Inspired</button>
+            <button class="modal-feel" style="--c:#f87171" data-action="modal-feeling" data-value="Anxious">😰 Anxious</button>
+            <button class="modal-feel" style="--c:#fbbf24" data-action="modal-feeling" data-value="Energized">⚡ Energized</button>
+            <button class="modal-feel" style="--c:#94a3b8" data-action="modal-feeling" data-value="Drained">🔋 Drained</button>
+            <button class="modal-feel" style="--c:#38bdf8" data-action="modal-feeling" data-value="Calm">🌿 Calm</button>
+            <button class="modal-feel" style="--c:#c084fc" data-action="modal-feeling" data-value="Distracted">🌀 Distracted</button>
+            <button class="modal-feel" style="--c:#f472b6" data-action="modal-feeling" data-value="Connected">💞 Connected</button>
+          </div>
 
-        <button class="text-xs text-slate-500 hover:text-slate-300 underline" data-action="close-modal">
-          Skip check-in & continue
-        </button>
+          <button class="skip" data-action="close-modal">Skip check-in and continue</button>
+        </div>
       </div>
-
     </section>
 
     <!-- RIGHT PANE: p5.js DATA VISUALIZATIONS -->
-    <section class="w-full md:w-1/2 flex flex-col bg-slate-900 h-full p-4 overflow-y-auto space-y-4">
-      
-      <div class="bg-slate-950 rounded-xl border border-slate-800 p-3">
-        <h2 class="text-xs font-bold text-cyan-400 mb-2 flex items-center gap-2">
-          <i class="fa-solid fa-chart-pie"></i> Category Distribution Radar
-        </h2>
-        <div id="canvas-wrapper-1" class="w-full h-56 rounded-lg overflow-hidden relative"></div>
+    <section id="pane-insights" class="insights flex-1 min-w-0 min-h-0 pane-hidden">
+
+      <!-- Quick read -->
+      <div class="flex gap-2.5">
+        <div class="mini"><span>Most seen</span><b id="insight-seen" style="color:var(--seen)">—</b></div>
+        <div class="mini"><span>Most engaged</span><b id="insight-engaged" style="color:var(--engage)">—</b></div>
+        <div class="mini"><span>Strongest feeling</span><b id="insight-feeling" style="color:var(--accent)">—</b></div>
       </div>
 
-      <div class="bg-slate-950 rounded-xl border border-slate-800 p-3">
-        <h2 class="text-xs font-bold text-indigo-400 mb-2 flex items-center gap-2">
-          <i class="fa-solid fa-heart-pulse"></i> Emotional Wellbeing Network
-        </h2>
-        <div id="canvas-wrapper-2" class="w-full h-56 rounded-lg overflow-hidden relative"></div>
+      <!-- 1. Category radar + engagement overlay -->
+      <div class="viz-card">
+        <div class="viz-head">
+          <div>
+            <h2 class="text-cyan-300"><i class="fa-solid fa-chart-pie"></i> Category distribution radar</h2>
+            <p>What your feed is made of, and what you reacted to.</p>
+          </div>
+          <button class="switch on" id="toggle-engagement" role="switch" aria-checked="true">
+            <span>Engagement</span><span class="track"></span>
+          </button>
+        </div>
+        <div class="legend">
+          <span><i style="background:var(--seen)"></i>Seen</span>
+          <span id="legend-engaged"><i style="background:var(--engage)"></i>Engaged (likes and shares)</span>
+        </div>
+        <div id="canvas-wrapper-1" class="canvas-wrap" style="height:300px"></div>
+      </div>
+
+      <!-- 2. Web map: content ↔ feelings -->
+      <div class="viz-card">
+        <div class="viz-head">
+          <div>
+            <h2 class="text-fuchsia-300"><i class="fa-solid fa-circle-nodes"></i> Content and feelings web</h2>
+            <p>Which kinds of content connect to which feelings.</p>
+          </div>
+        </div>
+        <div id="canvas-wrapper-3" class="canvas-wrap" style="height:360px"></div>
+        <p class="viz-note">Thicker lines mean that feeling was tagged on that content more often. Hover a node to follow its connections. Pause check-ins are shared across the content in that round.</p>
+      </div>
+
+      <!-- 3. Feeling bubbles -->
+      <div class="viz-card">
+        <div class="viz-head">
+          <div>
+            <h2 class="text-indigo-300"><i class="fa-solid fa-heart-pulse"></i> Emotional wellbeing network</h2>
+            <p>Bubbles grow with every time you tag that feeling.</p>
+          </div>
+        </div>
+        <div id="canvas-wrapper-2" class="canvas-wrap" style="height:230px"></div>
       </div>
 
     </section>
 
   </main>
+
+  <!-- Toast -->
+  <div class="toast" id="toast" role="status" aria-live="polite">
+    <i class="fa-solid fa-circle-check text-cyan-400"></i><span id="toast-text"></span>
+  </div>
 
   <py-script src="./app.py"></py-script>
 </body>
